@@ -1,0 +1,74 @@
+[
+  {
+    "id": 1,
+    "name": "Laura Mendez",
+    "location": "Seville, Spain",
+    "lat": 37.39,
+    "lon": -5.98,
+    "lessonTypes": ["Full Swing", "Short Game"],
+    "price": 55,
+    "bio": "PGA-certified coach who uses launch-monitor data to build simple, repeatable swings.",
+    "days": [1, 3, 5],
+    "hours": [9, 11, 16]
+  },
+  {
+    "id": 2,
+    "name": "Mark Collins",
+    "location": "Tupelo, MS",
+    "lat": 34.26,
+    "lon": -88.70,
+    "lessonTypes": ["Full Swing", "Junior Golf"],
+    "price": 60,
+    "bio": "Former college player who loves working with juniors and new golfers.",
+    "days": [2, 4, 6],
+    "hours": [8, 10, 14]
+  },
+  {
+    "id": 3,
+    "name": "Sofia Ruiz",
+    "location": "Seville, Spain",
+    "lat": 37.39,
+    "lon": -5.98,
+    "lessonTypes": ["Putting", "Short Game"],
+    "price": 45,
+    "bio": "Short-game specialist focused on putting routines and green reading.",
+    "days": [1, 2, 4],
+    "hours": [10, 12, 17]
+  },
+  {
+    "id": 4,
+    "name": "James Porter",
+    "location": "Memphis, TN",
+    "lat": 35.15,
+    "lon": -90.05,
+    "lessonTypes": ["Full Swing", "Course Strategy"],
+    "price": 75,
+    "bio": "Tour-experienced coach who helps low handicappers manage the course and score better.",
+    "days": [3, 5, 6],
+    "hours": [9, 13, 15]
+  },
+  {
+    "id": 5,
+    "name": "Emily Carter",
+    "location": "Tupelo, MS",
+    "lat": 34.26,
+    "lon": -88.70,
+    "lessonTypes": ["Putting", "Junior Golf"],
+    "price": 40,
+    "bio": "Patient beginner-friendly coach who makes the first steps in golf fun.",
+    "days": [1, 3, 6],
+    "hours": [11, 15, 17]
+  },
+  {
+    "id": 6,
+    "name": "Diego Navarro",
+    "location": "Memphis, TN",
+    "lat": 35.15,
+    "lon": -90.05,
+    "lessonTypes": ["Course Strategy", "Short Game"],
+    "price": 65,
+    "bio": "Strategy coach who teaches smart decisions from tee to green.",
+    "days": [2, 4, 5],
+    "hours": [8, 12, 16]
+  }
+]
