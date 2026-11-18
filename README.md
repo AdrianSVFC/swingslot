@@ -2,6 +2,10 @@
 
 SwingSlot is a web application that makes booking golf lessons simple for both golfers and instructors.
 
+**Live demo:** https://adriansvfc.github.io/swingslot/
+
+> **Current version (front-end MVP):** HTML, CSS, JavaScript and Bootstrap 5, with live course weather from the Open-Meteo API. Bookings are saved in the browser with localStorage. The Flask backend and database below are planned for the next sprint.
+
 ## The problem
 
 Many golf instructors still schedule lessons through text messages, phone calls and paper calendars. That leads to double bookings, missed lessons and lost notes about each student's progress. SwingSlot gives instructors one place to publish their availability and gives golfers a quick way to find and book an open time slot. After each lesson, AI turns the instructor's notes into a summary and a practice plan.
@@ -71,4 +75,4 @@ flask run
 
 ## Status
 
-🚧 Planning phase. Development starts in Sprint 1.
+🚧 Front-end MVP live on GitHub Pages. Backend in progress.
