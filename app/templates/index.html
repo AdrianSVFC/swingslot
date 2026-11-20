@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Golf Lesson Booking{% endblock %}
+{% block content %}
+<section class="hero text-white">
+  <div class="container py-5">
+    <h1 class="display-5 fw-bold">Book your next golf lesson in seconds</h1>
+    <p class="lead col-lg-7">Find a coach near you, see their open times and reserve a lesson. No phone calls or text messages needed.</p>
+    {% if has_endpoint('bookings.browse') %}
+      <a href="{{ url_for('bookings.browse') }}" class="btn btn-light btn-lg me-2">Find an instructor</a>
+    {% endif %}
+    {% if not g.user %}
+      <a href="{{ url_for('auth.register') }}" class="btn btn-outline-light btn-lg">Create an account</a>
+    {% endif %}
+  </div>
+</section>
+
+<section class="container py-5">
+  <div class="row g-4 text-center">
+    <div class="col-md-4">
+      <h2 class="h5">For golfers</h2>
+      <p class="text-muted">Browse instructors by location and lesson type, then book an open slot.</p>
+    </div>
+    <div class="col-md-4">
+      <h2 class="h5">For instructors</h2>
+      <p class="text-muted">Publish your profile and your available times. No more double bookings.</p>
+    </div>
+    <div class="col-md-4">
+      <h2 class="h5">One dashboard</h2>
+      <p class="text-muted">Everyone sees their upcoming and past lessons in one place.</p>
+    </div>
+  </div>
+</section>
+{% endblock %}

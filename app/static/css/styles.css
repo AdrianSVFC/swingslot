@@ -1,0 +1,84 @@
+/* SwingSlot styles (loaded after Bootstrap so these rules win) */
+:root {
+  --fairway: #1f5130;
+  --fairway-light: #2e7d4a;
+  --sand: #f4ecd8;
+}
+
+.bg-fairway {
+  background-color: var(--fairway);
+}
+
+.hero {
+  background: linear-gradient(rgba(31, 81, 48, 0.85), rgba(31, 81, 48, 0.85)),
+    radial-gradient(circle at 80% 20%, var(--fairway-light), var(--fairway));
+}
+
+.instructor-card {
+  border: none;
+  border-top: 4px solid var(--fairway-light);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.instructor-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.12);
+}
+
+.badge-type {
+  background-color: var(--sand);
+  color: var(--fairway);
+  font-weight: 500;
+}
+
+.btn-fairway {
+  background-color: var(--fairway);
+  color: #fff;
+}
+
+.btn-fairway:hover,
+.btn-fairway:focus {
+  background-color: var(--fairway-light);
+  color: #fff;
+}
+
+.weather-box {
+  background-color: var(--sand);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+}
+
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 0.5rem;
+}
+
+.slot-btn {
+  border: 1px solid var(--fairway);
+  color: var(--fairway);
+  background: #fff;
+}
+
+.slot-btn:hover {
+  background-color: var(--fairway);
+  color: #fff;
+}
+
+/* Slots shown to visitors who can't book (not logged in as a golfer) */
+.slot-btn.disabled-look,
+.slot-btn.disabled-look:hover {
+  cursor: default;
+  background: #fff;
+  color: var(--fairway);
+}
+
+.navbar .btn-link.nav-link {
+  text-decoration: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .instructor-card {
+    transition: none;
+  }
+}
