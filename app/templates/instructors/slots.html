@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}My time slots{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <h1 class="h3 mb-1">My time slots</h1>
+  <p class="text-muted mb-4">Add the times you can teach. Golfers only see open slots in the future.</p>
+
+  <form method="post" class="row g-2 align-items-end mb-4" aria-label="Add a time slot">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="col-sm-auto">
+      <label for="date" class="form-label">Date</label>
+      <input id="date" name="date" type="date" class="form-control" required>
+    </div>
+    <div class="col-sm-auto">
+      <label for="time" class="form-label">Start time</label>
+      <input id="time" name="time" type="time" step="900" class="form-control" required>
+    </div>
+    <div class="col-sm-auto">
+      <button type="submit" class="btn btn-fairway">Add slot</button>
+    </div>
+  </form>
+
+  {% if slots %}
+    <ul class="list-group">
+      {% for slot in slots %}
+        <li class="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <span>
+            <strong>{{ slot.starts_at | nice_time }}</strong>
+            {% if slot.student_name %}
+              <span class="badge bg-success ms-2">Booked by {{ slot.student_name }}</span>
+            {% else %}
+              <span class="badge badge-type ms-2">Open</span>
+            {% endif %}
+          </span>
+          {% if not slot.student_name %}
+            <form method="post" action="{{ url_for('slots.delete', slot_id=slot.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-outline-danger btn-sm"
+                aria-label="Remove slot {{ slot.starts_at | nice_time }}">Remove</button>
+            </form>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="text-muted">You have no upcoming slots yet. Add your first one above.</p>
+  {% endif %}
+</div>
+{% endblock %}
