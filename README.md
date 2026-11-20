@@ -1,78 +1,194 @@
-# SwingSlot ⛳ — Golf Lesson Booking App
+# SwingSlot ⛳ - Golf Lesson Booking App
 
-SwingSlot is a web application that makes booking golf lessons simple for both golfers and instructors.
+SwingSlot makes booking golf lessons simple for golfers and instructors. Instructors publish their profile and open time slots; golfers browse instructors, book a slot and see their lessons in a dashboard.
 
-**Live demo:** https://adriansvfc.github.io/swingslot/
+**Live app (Render, Docker):** https://swingslot.onrender.com
+*Free plan: the first visit after a quiet period can take about a minute while the server wakes up.*
 
-> **Current version (front-end MVP):** HTML, CSS, JavaScript and Bootstrap 5, with live course weather from the Open-Meteo API. Bookings are saved in the browser with localStorage. The Flask backend and database below are planned for the next sprint.
+**Status:** Sprint 1 MVP complete (Unit 12). All 7 Sprint 1 user stories are merged and deployed; 25 automated tests pass.
 
-## The problem
+## Try it
 
-Many golf instructors still schedule lessons through text messages, phone calls and paper calendars. That leads to double bookings, missed lessons and lost notes about each student's progress. SwingSlot gives instructors one place to publish their availability and gives golfers a quick way to find and book an open time slot. After each lesson, AI turns the instructor's notes into a summary and a practice plan.
+The live database is filled with demo data every time the app starts.
 
-## Target users
+| Role | Email | Password |
+|------|-------|----------|
+| Golfer | `golfer@swingslot.demo` | `swingslot123` |
+| Instructor | `mark@swingslot.demo` | `swingslot123` |
 
-- **Golf instructors** (independent coaches and club pros) who need to manage their schedule and keep track of their students.
-- **Golfers of every level** who want to book lessons easily and remember what they worked on.
+You can also sign up with your own email as a golfer or an instructor. Demo data is reset on every deploy.
 
-## Core features (planned)
+## Features (Sprint 1)
 
-1. **Accounts & profiles**: sign up and log in as a student or an instructor. Instructor profiles show bio, location, lesson types and prices.
-2. **Instructor availability**: instructors add and remove open time slots.
-3. **Booking & dashboard**: students browse instructors, book or cancel lessons, and see upcoming and past lessons.
-4. **AI lesson insights**: the instructor's lesson notes become a clear summary and a weekly practice plan for the student.
+| Jira | Feature |
+|------|---------|
+| GOLF-2 | Sign up and log in as a golfer |
+| GOLF-7 | Sign up as an instructor and set up a profile (location, bio, lesson types, price) |
+| GOLF-12 | Hashed passwords, log out, role-based access, CSRF protection |
+| GOLF-22 | Instructors add and remove time slots (past and duplicate times are rejected) |
+| GOLF-27 | Browse instructors, filter by location and lesson type, live course weather (Open-Meteo API) |
+| GOLF-32 | Book an open slot; the database blocks double bookings |
+| GOLF-42 | Dashboards with upcoming and past lessons for golfers and instructors |
 
-## Planned technology stack
+## Tech stack
 
 | Layer | Technology |
-|---|---|
-| Frontend | HTML, CSS, JavaScript, Jinja2 templates |
-| Backend | Python 3, Flask, Flask-Login, Flask-WTF |
-| Database | SQLite (development), PostgreSQL (production), SQLAlchemy ORM |
-| AI | OpenAI API (lesson summaries and practice plans) |
-| Deployment | Render |
-| Tools | Git and GitHub, Jira (Scrum), Confluence |
+|-------|------------|
+| Backend | Python 3.12, Flask 3, Jinja2 templates |
+| Database | SQLite (built-in `sqlite3` module, schema in `app/schema.sql`) |
+| Frontend | HTML, CSS, Bootstrap 5, a little JavaScript for the weather widget |
+| External API | [Open-Meteo](https://open-meteo.com/) (weather, no key needed) |
+| Testing | pytest (25 tests) |
+| Container | Docker (`python:3.12-slim`, gunicorn) |
+| Hosting | Render web service (free plan), auto-deploys from `main` |
+| Project management | Jira (Scrum) and Confluence |
 
-## Planned project structure
+## Project structure
 
 ```
 swingslot/
 ├── app/
-│   ├── __init__.py        # app factory
-│   ├── models.py          # User, InstructorProfile, TimeSlot, Booking, LessonNote
-│   ├── auth/              # register, login, logout
-│   ├── booking/           # availability, browse, book, cancel, dashboards
-│   ├── ai/                # summary and practice-plan generation
-│   ├── templates/
-│   └── static/            # css, js
-├── tests/
+│   ├── __init__.py        # app factory, CSRF, template helpers
+│   ├── db.py              # SQLite connection, init-db command
+│   ├── schema.sql         # users, instructor_profiles, time_slots, bookings
+│   ├── seed.py            # demo instructors, slots and golfer
+│   ├── auth.py            # GOLF-2, GOLF-12: register, login, logout
+│   ├── instructors.py     # GOLF-7: instructor profile
+│   ├── slots.py           # GOLF-22: add/remove time slots
+│   ├── bookings.py        # GOLF-27, GOLF-32: browse and book
+│   ├── dashboard.py       # GOLF-42: dashboards
+│   ├── templates/         # Jinja2 pages
+│   └── static/            # css/styles.css, js/weather.js
+├── tests/                 # pytest tests, one file per feature
+├── Dockerfile
 ├── requirements.txt
-├── .env.example
 └── run.py
 ```
 
-## Getting started (will be completed during development)
+The `index.html`, `css/`, `js/` and `data/` folders in the root are the earlier static prototype (still on GitHub Pages at https://adriansvfc.github.io/swingslot/). The Flask app does not use them.
+
+## Run it locally
 
 ```bash
 git clone https://github.com/AdrianSVFC/swingslot.git
 cd swingslot
 python -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
+source venv/bin/activate          # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env            # add SECRET_KEY and OPENAI_API_KEY
-flask run
+python run.py                     # http://localhost:5000
 ```
 
-## Roadmap
+The SQLite database is created in `instance/` with demo data the first time the app starts. To reset it: `flask --app app init-db`.
 
-- **Sprint 1: MVP (end of Unit 12)**: accounts, instructor availability, browse and book lessons, dashboards, deploy to Render.
-- **Sprint 2: Final App (end of Unit 14)**: profile editing, cancellations, AI lesson summaries and practice plans, lesson history, polish.
+### Environment variables
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `SECRET_KEY` | dev-only value | Signs session cookies. **Set a random value in production.** |
+| `DATABASE_PATH` | `instance/swingslot.sqlite` | Where the SQLite file lives |
+| `SEED_DEMO_DATA` | `1` | Load demo data into a new database |
+| `DEMO_PASSWORD` | `swingslot123` | Password for the demo accounts |
+
+## Run the tests
+
+```bash
+pytest
+```
+
+25 tests cover sign-up and login, password hashing, CSRF, instructor profiles, adding and removing slots, browsing and filtering, booking and double-booking, and both dashboards.
+
+## Docker
+
+```bash
+docker build -t swingslot .
+docker run -p 8000:8000 -e SECRET_KEY=change-me swingslot
+# open http://localhost:8000
+```
+
+Notes about the container:
+
+- Dependencies are installed in their own layer, so rebuilding after a code change is fast.
+- The app runs as a non-root user (`appuser`).
+- gunicorn listens on `$PORT` (Render sets it; the default is 8000).
+- One gunicorn worker with 4 threads, so only one process creates the SQLite database on start-up.
+
+## Deployment (Render)
+
+1. Signed in to Render with GitHub and installed the Render GitHub app on this repository only.
+2. Created a **Web Service** from `AdrianSVFC/swingslot`, branch `main`. Render detected the `Dockerfile` automatically.
+3. Plan: **Free**. Environment variable `SECRET_KEY` generated by Render. Health check path: `/health`.
+4. The first deploy built the image in about 30 seconds. Every merge into `main` now triggers a new deploy.
+
+**Challenges and limits**
+
+- The development machine had no Docker daemon, so the image was first built and tested on Render's build servers.
+- Render's free plan has no persistent disk: SQLite data is reset on each deploy or restart. That's why demo data is seeded at start-up. Moving to PostgreSQL is planned (Jira GOLF-66).
+- Free services sleep after 15 minutes without traffic, so the first request can be slow.
+
+## Git workflow
+
+Each user story was built on its own feature branch with small, descriptive commits, then merged into `main` through a pull request. Nothing was pushed directly to `main`.
+
+| Pull request | Branch | Jira |
+|--------------|--------|------|
+| [#1](https://github.com/AdrianSVFC/swingslot/pull/1) | `feature/GOLF-2-GOLF-12-accounts` | GOLF-2, GOLF-12 |
+| [#2](https://github.com/AdrianSVFC/swingslot/pull/2) | `feature/GOLF-7-instructor-profile` | GOLF-7 |
+| [#3](https://github.com/AdrianSVFC/swingslot/pull/3) | `feature/GOLF-22-instructor-availability` | GOLF-22 |
+| [#4](https://github.com/AdrianSVFC/swingslot/pull/4) | `feature/GOLF-27-GOLF-32-browse-and-book` | GOLF-27, GOLF-32 |
+| [#5](https://github.com/AdrianSVFC/swingslot/pull/5) | `feature/GOLF-42-dashboards` | GOLF-42 |
+| [#6](https://github.com/AdrianSVFC/swingslot/pull/6) | `feature/docker-containerization` | GOLF-46 |
+
+## AI tool usage
+
+**Tool used:** Claude (Anthropic).
+
+**What it was used for**
+
+- **Code generation:** the Flask blueprints, SQL schema, Jinja templates, CSS and the weather script were generated by Claude from the Jira user stories and acceptance criteria, reusing the look of the earlier static prototype.
+- **Tests:** Claude wrote the pytest suite and ran it after each feature. Two tests failed on the first run (a CSRF token taken from a page that had no form, and a check that matched `/book/1` inside `/book/10`) and were fixed before the code was pushed.
+- **Architecture decisions:** Claude suggested replacing SQLAlchemy and Flask-Login with `sqlite3` and Flask sessions for the MVP (fewer dependencies), enforcing "no double bookings" with a database `UNIQUE` constraint instead of only checking in Python, and using one gunicorn worker so SQLite is created safely.
+- **DevOps and docs:** the Dockerfile, the Render set-up steps, this README and the Confluence sprint report.
+
+**How it changed the process:** the whole Sprint 1 scope was finished in one sprint, with tests for every story. The trade-off is that every AI-generated piece has to be read and understood, because Sprint 2 builds on it.
+
+**Example of AI-generated code**: booking a slot safely (`app/bookings.py`):
+
+```python
+try:
+    db.execute("INSERT INTO bookings (slot_id, student_id) VALUES (?, ?)", (slot_id, g.user["id"]))
+    db.commit()
+except sqlite3.IntegrityError:
+    # UNIQUE(slot_id) failed: someone else booked it a moment earlier
+    flash("Sorry, that slot was just booked by someone else.", "warning")
+    return redirect(url_for("bookings.detail", instructor_id=slot["instructor_id"]))
+```
+
+**Example of AI-generated code**: role-based access (`app/auth.py`):
+
+```python
+def role_required(role):
+    """Only allow users with this role (e.g. only instructors can add slots)."""
+    def decorator(view):
+        @functools.wraps(view)
+        @login_required
+        def wrapped(**kwargs):
+            if g.user["role"] != role:
+                abort(403)
+            return view(**kwargs)
+        return wrapped
+    return decorator
+```
 
 ## Project management
 
-- Jira board: https://swingslot-project.atlassian.net/jira/software/c/projects/GOLF/boards/2/backlog
+- Jira board: https://swingslot-project.atlassian.net/jira/software/c/projects/GOLF/boards/2
 - Confluence space: https://swingslot-project.atlassian.net/wiki/spaces/SWING/overview
+- Sprint 1 report: https://swingslot-project.atlassian.net/wiki/spaces/SWING/pages/1245185/Sprint+1+MVP+Report
 
-## Status
+## Roadmap
 
-🚧 Front-end MVP live on GitHub Pages. Backend in progress.
+- **Sprint 2 (Unit 13-14):** CI/CD with GitHub Actions (run pytest on every pull request and deploy on merge), cancellations (GOLF-37), student profile (GOLF-17), AI lesson summaries and practice plans with the OpenAI API (GOLF-48, 52, 57, 61), PostgreSQL in production (GOLF-66), slot duration and lesson type (GOLF-65).
+
+## Author
+
+Adrian Perez Fernandez, Computer Science student, Blue Mountain Christian University.
