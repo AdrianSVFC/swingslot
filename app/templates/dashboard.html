@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <h1 class="h3 mb-1">Hi, {{ g.user.name }}</h1>
+  {% if g.user.role == 'instructor' %}
+    <p class="text-muted mb-4">You have {{ open_slots }} open slot(s) that golfers can still book.
+      {% if has_endpoint('slots.manage') %}<a href="{{ url_for('slots.manage') }}">Manage slots</a>{% endif %}</p>
+  {% else %}
+    <p class="text-muted mb-4">Here are your golf lessons.
+      {% if has_endpoint('bookings.browse') %}<a href="{{ url_for('bookings.browse') }}">Book another lesson</a>{% endif %}</p>
+  {% endif %}
+
+  <div class="row g-4">
+    <section class="col-lg-6" aria-labelledby="upcoming-heading">
+      <h2 id="upcoming-heading" class="h5">Upcoming lessons ({{ upcoming | length }})</h2>
+      {% if upcoming %}
+        <ul class="list-group">
+          {% for l in upcoming %}
+            <li class="list-group-item">
+              <strong>{{ l.starts_at | nice_time }}</strong>
+              {% if g.user.role == 'student' %}
+                with <a href="{{ url_for('bookings.detail', instructor_id=l.other_id) }}">{{ l.other_name }}</a>
+                <span class="text-muted">({{ l.location }}, ${{ l.price }})</span>
+              {% else %}
+                with golfer {{ l.other_name }}
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-muted">No upcoming lessons.</p>
+      {% endif %}
+    </section>
+
+    <section class="col-lg-6" aria-labelledby="past-heading">
+      <h2 id="past-heading" class="h5">Past lessons ({{ past | length }})</h2>
+      {% if past %}
+        <ul class="list-group">
+          {% for l in past %}
+            <li class="list-group-item text-muted">{{ l.starts_at | nice_time }} with {{ l.other_name }}</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-muted">No past lessons yet.</p>
+      {% endif %}
+    </section>
+  </div>
+</div>
+{% endblock %}
