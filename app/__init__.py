@@ -25,10 +25,11 @@ def create_app(test_config=None):
     db.ensure_db(app)
 
     # One blueprint per feature / Jira user story
-    from . import auth, instructors, slots
+    from . import auth, bookings, instructors, slots
     app.register_blueprint(auth.bp)         # GOLF-2, GOLF-12: accounts
     app.register_blueprint(instructors.bp)  # GOLF-7: instructor profile
     app.register_blueprint(slots.bp)        # GOLF-22: availability
+    app.register_blueprint(bookings.bp)     # GOLF-27, GOLF-32: browse and book
 
     register_csrf(app)
 
