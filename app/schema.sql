@@ -1,6 +1,7 @@
 -- SwingSlot database schema (SQLite)
 -- Running this file resets the database. Tables added after the MVP live in migrations.sql.
 
+DROP TABLE IF EXISTS student_profiles;
 DROP TABLE IF EXISTS cancellations;
 DROP TABLE IF EXISTS bookings;
 DROP TABLE IF EXISTS time_slots;
