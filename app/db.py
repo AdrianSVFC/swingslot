@@ -1,4 +1,4 @@
-"""Database helpers: one SQLite connection per request, plus setup and seeding."""
+"""Database helpers: one SQLite connection per request, plus setup, migrations and seeding."""
 import sqlite3
 from pathlib import Path
 
@@ -21,14 +21,22 @@ def close_db(_error=None):
         db.close()
 
 
+def apply_migrations(db):
+    """Create the tables added after the MVP if they don't exist yet (safe to run every start)."""
+    migrations = Path(__file__).with_name("migrations.sql").read_text(encoding="utf-8")
+    db.executescript(migrations)
+
+
 def init_db():
-    """Create all tables from schema.sql (this deletes existing data)."""
+    """Create all tables from schema.sql + migrations.sql (this deletes existing data)."""
     schema = Path(__file__).with_name("schema.sql").read_text(encoding="utf-8")
-    get_db().executescript(schema)
+    db = get_db()
+    db.executescript(schema)
+    apply_migrations(db)
 
 
 def ensure_db(app):
-    """Create and seed the database the first time the app starts."""
+    """Create and seed the database the first time the app starts; add new tables later on."""
     Path(app.config["DATABASE"]).parent.mkdir(parents=True, exist_ok=True)
     with app.app_context():
         db = get_db()
@@ -40,6 +48,9 @@ def ensure_db(app):
             if app.config.get("SEED_DEMO_DATA"):
                 from .seed import seed_demo_data
                 seed_demo_data(db)
+        else:
+            # Older database (e.g. a developer's local copy): add the Sprint 3 tables
+            apply_migrations(db)
 
 
 @click.command("init-db")
