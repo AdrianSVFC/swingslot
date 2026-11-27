@@ -1,6 +1,6 @@
-"""Golfers browse instructors and their open slots (GOLF-27) and book one (GOLF-32)."""
+"""Golfers browse instructors (GOLF-27), book a slot (GOLF-32) and cancel a booking (GOLF-37)."""
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from flask import (Blueprint, abort, current_app, flash, g, redirect, render_template,
                    request, url_for)
@@ -10,9 +10,23 @@ from .db import get_db
 
 bp = Blueprint("bookings", __name__)
 
+# GOLF-39: golfers can cancel up to this many hours before the lesson starts
+CANCEL_NOTICE_HOURS = 24
+
 
 def now_iso():
     return datetime.now().strftime("%Y-%m-%dT%H:%M")
+
+
+@bp.app_template_global()
+def can_cancel(starts_at, now=None):
+    """True if a lesson starting at `starts_at` ("YYYY-MM-DDTHH:MM") can still be cancelled.
+
+    Also used in dashboard.html to decide whether to show the Cancel button.
+    """
+    now = now or datetime.now()
+    starts = datetime.strptime(starts_at, "%Y-%m-%dT%H:%M")
+    return starts - now >= timedelta(hours=CANCEL_NOTICE_HOURS)
 
 
 @bp.route("/instructors")
@@ -83,3 +97,33 @@ def book(slot_id):
     if "dashboard.home" in current_app.view_functions:
         return redirect(url_for("dashboard.home"))
     return redirect(url_for("bookings.detail", instructor_id=slot["instructor_id"]))
+
+
+@bp.route("/bookings/<int:booking_id>/cancel", methods=("POST",))
+@role_required("student")
+def cancel(booking_id):
+    """GOLF-37: a golfer cancels their own lesson; the slot becomes bookable again."""
+    db = get_db()
+    booking = db.execute(
+        "SELECT b.id, b.student_id, s.starts_at, s.instructor_id"
+        " FROM bookings b JOIN time_slots s ON s.id = b.slot_id WHERE b.id = ?",
+        (booking_id,),
+    ).fetchone()
+    # 404 (not 403) for other golfers' bookings, so nobody can find out which bookings exist
+    if booking is None or booking["student_id"] != g.user["id"]:
+        abort(404)
+
+    if not can_cancel(booking["starts_at"]):
+        flash(f"Lessons can only be cancelled more than {CANCEL_NOTICE_HOURS} hours before they start. "
+              "Please contact your instructor.", "warning")
+    else:
+        # GOLF-41: keep a record so the instructor sees the cancellation in their dashboard
+        db.execute(
+            "INSERT INTO cancellations (instructor_id, student_id, starts_at) VALUES (?, ?, ?)",
+            (booking["instructor_id"], g.user["id"], booking["starts_at"]),
+        )
+        # Deleting the booking frees the slot (UNIQUE(slot_id) no longer blocks it)
+        db.execute("DELETE FROM bookings WHERE id = ?", (booking_id,))
+        db.commit()
+        flash("Lesson cancelled. The time slot is open again for other golfers.", "info")
+    return redirect(url_for("dashboard.home"))
