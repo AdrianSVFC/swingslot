@@ -1,4 +1,4 @@
-"""Demo data so the deployed MVP has instructors and open slots to browse."""
+"""Demo data so the deployed app has instructors, open slots and a golfer to try."""
 import os
 from datetime import date, datetime, timedelta
 
@@ -25,11 +25,14 @@ DEMO_INSTRUCTORS = [
      "days": [2, 4, 5], "hours": [9, 13, 15]},
 ]
 
-DEMO_STUDENT = {"name": "Demo Golfer", "email": "golfer@swingslot.demo"}
+DEMO_STUDENT = {"name": "Demo Golfer", "email": "golfer@swingslot.demo",
+                # GOLF-17: demo golfer profile so instructors see it with bookings
+                "handicap": 18.4, "level": "Intermediate",
+                "goals": "Break 90 this season and stop slicing my driver."}
 
 
 def seed_demo_data(db, days_ahead=14):
-    """Insert demo instructors, their weekly slots and one demo golfer."""
+    """Insert demo instructors, their weekly slots and one demo golfer with a profile."""
     password = os.environ.get("DEMO_PASSWORD", "swingslot123")
     pw_hash = generate_password_hash(password)
     today = date.today()
@@ -56,8 +59,12 @@ def seed_demo_data(db, days_ahead=14):
                         (user_id, starts_at),
                     )
 
-    db.execute(
+    cur = db.execute(
         "INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, 'student')",
         (DEMO_STUDENT["name"], DEMO_STUDENT["email"], pw_hash),
+    )
+    db.execute(
+        "INSERT INTO student_profiles (user_id, handicap, level, goals) VALUES (?, ?, ?, ?)",
+        (cur.lastrowid, DEMO_STUDENT["handicap"], DEMO_STUDENT["level"], DEMO_STUDENT["goals"]),
     )
     db.commit()
