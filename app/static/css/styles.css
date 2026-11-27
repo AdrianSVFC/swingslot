@@ -77,6 +77,13 @@
   text-decoration: none;
 }
 
+/* GOLF-48: keep the line breaks the instructor typed in lesson notes */
+.lesson-notes {
+  white-space: pre-line;
+  border-left: 4px solid var(--fairway-light);
+  padding-left: 0.75rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .instructor-card {
     transition: none;
