@@ -60,7 +60,20 @@
       {% if past %}
         <ul class="list-group">
           {% for l in past %}
-            <li class="list-group-item text-muted">{{ l.starts_at | nice_time }} with {{ l.other_name }}</li>
+            <li class="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <span class="text-muted">{{ l.starts_at | nice_time }} with {{ l.other_name }}</span>
+              {# GOLF-48: instructors write notes after the lesson; golfers read them #}
+              {% if has_endpoint('notes.detail') %}
+                {% if g.user.role == 'instructor' %}
+                  <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('notes.edit', booking_id=l.booking_id) }}">
+                    {{ 'Edit notes' if l.has_notes else 'Add notes' }}</a>
+                {% elif l.has_notes %}
+                  <a class="btn btn-fairway btn-sm" href="{{ url_for('notes.detail', booking_id=l.booking_id) }}">View notes</a>
+                {% else %}
+                  <small class="text-muted">No notes yet</small>
+                {% endif %}
+              {% endif %}
+            </li>
           {% endfor %}
         </ul>
       {% else %}

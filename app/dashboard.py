@@ -19,10 +19,12 @@ def home():
     if g.user["role"] == "student":
         lessons = db.execute(
             "SELECT b.id AS booking_id, s.starts_at, u.id AS other_id, u.name AS other_name,"
-            " p.location, p.price, NULL AS handicap, NULL AS level, NULL AS goals"
+            " p.location, p.price, NULL AS handicap, NULL AS level, NULL AS goals,"
+            " ln.booking_id IS NOT NULL AS has_notes"
             " FROM bookings b JOIN time_slots s ON s.id = b.slot_id"
             " JOIN users u ON u.id = s.instructor_id"
             " LEFT JOIN instructor_profiles p ON p.user_id = u.id"
+            " LEFT JOIN lesson_notes ln ON ln.booking_id = b.id"
             " WHERE b.student_id = ? ORDER BY s.starts_at",
             (g.user["id"],),
         ).fetchall()
@@ -30,11 +32,14 @@ def home():
     else:
         lessons = db.execute(
             "SELECT b.id AS booking_id, s.starts_at, u.id AS other_id, u.name AS other_name,"
-            " NULL AS location, NULL AS price, sp.handicap, sp.level, sp.goals"
+            " NULL AS location, NULL AS price, sp.handicap, sp.level, sp.goals,"
+            " ln.booking_id IS NOT NULL AS has_notes"
             " FROM bookings b JOIN time_slots s ON s.id = b.slot_id"
             " JOIN users u ON u.id = b.student_id"
             # GOLF-20: show the golfer's handicap, level and goals to the instructor
             " LEFT JOIN student_profiles sp ON sp.user_id = b.student_id"
+            # GOLF-48: does this lesson already have notes?
+            " LEFT JOIN lesson_notes ln ON ln.booking_id = b.id"
             " WHERE s.instructor_id = ? ORDER BY s.starts_at",
             (g.user["id"],),
         ).fetchall()

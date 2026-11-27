@@ -19,3 +19,10 @@ CREATE TABLE IF NOT EXISTS student_profiles (
   goals TEXT NOT NULL DEFAULT '',
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- GOLF-48 / GOLF-49: notes the instructor writes after a lesson; the golfer can read them.
+CREATE TABLE IF NOT EXISTS lesson_notes (
+  booking_id INTEGER PRIMARY KEY REFERENCES bookings (id) ON DELETE CASCADE,
+  notes TEXT NOT NULL,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
