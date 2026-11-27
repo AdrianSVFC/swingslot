@@ -1,0 +1,95 @@
+# SwingSlot CI/CD pipeline (GOLF-67)
+# Written with help from Claude (AI) and reviewed by Adrian.
+#
+# 1. test   - runs the pytest suite on every push and every pull request (GOLF-68)
+# 2. docker - builds the production image and checks the container answers /health (GOLF-70)
+#
+# The deploy job (GOLF-76) is added in a later pull request, once Google Cloud is set up.
+
+name: CI/CD
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Cancel an older run of the same branch / PR when a new commit arrives
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Unit tests (pytest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        run: pytest -v --junitxml=test-results.xml
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results.xml
+
+  docker:
+    name: Docker build and smoke test
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t swingslot:ci .
+
+      - name: Start container
+        run: docker run -d --name swingslot -p 8000:8000 -e SECRET_KEY=ci-only-secret swingslot:ci
+
+      - name: Wait for /health
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8000/health; then
+              echo ""
+              echo "Container is healthy"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::Container did not become healthy in 30 seconds"
+          docker logs swingslot
+          exit 1
+
+      - name: Check the main pages render
+        run: |
+          curl -fsS http://localhost:8000/ | grep -q "Book your next golf lesson"
+          curl -fsS http://localhost:8000/instructors | grep -q "instructor(s) found"
+          echo "Home and instructor pages OK"
+
+      - name: Show container logs
+        if: always()
+        run: docker logs swingslot || true
+
+      - name: Stop container
+        if: always()
+        run: docker rm -f swingslot || true
