@@ -11,6 +11,7 @@ from .db import get_db
 bp = Blueprint("bookings", __name__)
 
 # GOLF-39: golfers can cancel up to this many hours before the lesson starts
+# (CANCEL_NOTICE_HOURS, can_cancel() and cancel() were AI-generated with Claude)
 CANCEL_NOTICE_HOURS = 24
 
 
@@ -99,6 +100,7 @@ def book(slot_id):
     return redirect(url_for("bookings.detail", instructor_id=slot["instructor_id"]))
 
 
+# --- GOLF-37 cancellations: AI-generated with Claude (Anthropic), reviewed before merging ---
 @bp.route("/bookings/<int:booking_id>/cancel", methods=("POST",))
 @role_required("student")
 def cancel(booking_id):
