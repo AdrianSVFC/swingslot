@@ -17,13 +17,28 @@
       {% if upcoming %}
         <ul class="list-group">
           {% for l in upcoming %}
-            <li class="list-group-item">
-              <strong>{{ l.starts_at | nice_time }}</strong>
-              {% if g.user.role == 'student' %}
-                with <a href="{{ url_for('bookings.detail', instructor_id=l.other_id) }}">{{ l.other_name }}</a>
-                <span class="text-muted">({{ l.location }}, ${{ l.price }})</span>
-              {% else %}
-                with golfer {{ l.other_name }}
+            <li class="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <span>
+                <strong>{{ l.starts_at | nice_time }}</strong>
+                {% if g.user.role == 'student' %}
+                  with <a href="{{ url_for('bookings.detail', instructor_id=l.other_id) }}">{{ l.other_name }}</a>
+                  <span class="text-muted">({{ l.location }}, ${{ l.price }})</span>
+                {% else %}
+                  with golfer {{ l.other_name }}
+                {% endif %}
+              </span>
+              {# GOLF-37: golfers can cancel up to 24 hours before the lesson #}
+              {% if g.user.role == 'student' and has_endpoint('bookings.cancel') %}
+                {% if can_cancel(l.starts_at) %}
+                  <form method="post" action="{{ url_for('bookings.cancel', booking_id=l.booking_id) }}"
+                    onsubmit="return confirm('Cancel this lesson? The time slot will open up for other golfers.');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-outline-danger btn-sm"
+                      aria-label="Cancel lesson on {{ l.starts_at | nice_time }}">Cancel</button>
+                  </form>
+                {% else %}
+                  <small class="text-muted">Starts in less than 24 h</small>
+                {% endif %}
               {% endif %}
             </li>
           {% endfor %}
@@ -45,6 +60,25 @@
         <p class="text-muted">No past lessons yet.</p>
       {% endif %}
     </section>
+
+    {% if cancellations is not none %}
+      <section class="col-lg-6" aria-labelledby="cancelled-heading">
+        <h2 id="cancelled-heading" class="h5">Recent cancellations ({{ cancellations | length }})</h2>
+        {% if cancellations %}
+          <ul class="list-group">
+            {% for c in cancellations %}
+              <li class="list-group-item">
+                <span class="badge bg-secondary me-2">Cancelled</span>
+                {{ c.starts_at | nice_time }} with golfer {{ c.student_name }}
+                <span class="text-muted small">(slot is open again)</span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-muted">No cancelled lessons.</p>
+        {% endif %}
+      </section>
+    {% endif %}
   </div>
 </div>
 {% endblock %}
