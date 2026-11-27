@@ -1,5 +1,7 @@
 """Golfer profile: handicap, level and goals (GOLF-17, GOLF-18, GOLF-19).
 
+AI-generated: written with Claude (Anthropic) and reviewed before merging (see README > AI tool usage).
+
 Instructors see this information next to each booked lesson (GOLF-20), so they know
 the golfer's level before the lesson starts.
 """
