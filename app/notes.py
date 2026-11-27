@@ -1,5 +1,7 @@
 """Lesson notes: after a lesson the instructor writes what was worked on (GOLF-48, GOLF-50).
 
+AI-generated: written with Claude (Anthropic) and reviewed before merging (see README > AI tool usage).
+
 Only the instructor who taught the lesson can write notes, and only the golfer and that
 instructor can read them (GOLF-51). Anyone else gets a 404, so lesson ids can't be probed.
 """
