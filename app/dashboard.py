@@ -14,10 +14,12 @@ bp = Blueprint("dashboard", __name__)
 def home():
     db = get_db()
     now = datetime.now().strftime("%Y-%m-%dT%H:%M")
+    cancellations = None
 
     if g.user["role"] == "student":
         lessons = db.execute(
-            "SELECT s.starts_at, u.id AS other_id, u.name AS other_name, p.location, p.price"
+            "SELECT b.id AS booking_id, s.starts_at, u.id AS other_id, u.name AS other_name,"
+            " p.location, p.price"
             " FROM bookings b JOIN time_slots s ON s.id = b.slot_id"
             " JOIN users u ON u.id = s.instructor_id"
             " LEFT JOIN instructor_profiles p ON p.user_id = u.id"
@@ -27,7 +29,8 @@ def home():
         open_slots = None
     else:
         lessons = db.execute(
-            "SELECT s.starts_at, u.id AS other_id, u.name AS other_name, NULL AS location, NULL AS price"
+            "SELECT b.id AS booking_id, s.starts_at, u.id AS other_id, u.name AS other_name,"
+            " NULL AS location, NULL AS price"
             " FROM bookings b JOIN time_slots s ON s.id = b.slot_id"
             " JOIN users u ON u.id = b.student_id"
             " WHERE s.instructor_id = ? ORDER BY s.starts_at",
@@ -38,7 +41,15 @@ def home():
             " WHERE s.instructor_id = ? AND s.starts_at > ? AND b.id IS NULL",
             (g.user["id"], now),
         ).fetchone()[0]
+        # GOLF-41: the most recent lessons golfers cancelled with this instructor
+        cancellations = db.execute(
+            "SELECT c.starts_at, c.cancelled_at, u.name AS student_name"
+            " FROM cancellations c JOIN users u ON u.id = c.student_id"
+            " WHERE c.instructor_id = ? ORDER BY c.cancelled_at DESC, c.id DESC LIMIT 5",
+            (g.user["id"],),
+        ).fetchall()
 
     upcoming = [l for l in lessons if l["starts_at"] > now]
     past = [l for l in lessons if l["starts_at"] <= now][::-1]  # most recent first
-    return render_template("dashboard.html", upcoming=upcoming, past=past, open_slots=open_slots)
+    return render_template("dashboard.html", upcoming=upcoming, past=past,
+                           open_slots=open_slots, cancellations=cancellations)
