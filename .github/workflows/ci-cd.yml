@@ -3,8 +3,12 @@
 #
 # 1. test   - runs the pytest suite on every push and every pull request (GOLF-68)
 # 2. docker - builds the production image and checks the container answers /health (GOLF-70)
+# 3. deploy - only on main, only after 1 and 2 pass: pushes the image to Artifact Registry and
+#             deploys it to Google Cloud Run with a safe "candidate -> smoke test -> go live"
+#             rollout and an automatic rollback (GOLF-76, GOLF-79)
 #
-# The deploy job (GOLF-76) is added in a later pull request, once Google Cloud is set up.
+# Google Cloud login is keyless (Workload Identity Federation): no JSON key is stored in GitHub.
+# Repository variables used: GCP_PROJECT_ID, GCP_REGION, GCP_WIF_PROVIDER, GCP_DEPLOY_SA, GCP_RUNTIME_SA
 
 name: CI/CD
 
@@ -18,7 +22,7 @@ on:
 # Cancel an older run of the same branch / PR when a new commit arrives
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
   contents: read
@@ -93,3 +97,114 @@ jobs:
       - name: Stop container
         if: always()
         run: docker rm -f swingslot || true
+
+  deploy:
+    name: Deploy to Google Cloud Run
+    needs: [test, docker]
+    # Never deploy from pull requests or feature branches
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write # lets GitHub prove its identity to Google (keyless login)
+    environment:
+      name: production
+      url: ${{ steps.golive.outputs.url }}
+    env:
+      PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      REGION: ${{ vars.GCP_REGION }}
+      SERVICE: swingslot
+      IMAGE: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/swingslot/swingslot:${{ github.sha }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Log in to Google Cloud (Workload Identity Federation)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SA }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build and push image to Artifact Registry
+        run: |
+          gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
+
+      - name: Remember the live revision (for rollback)
+        id: previous
+        run: |
+          SERVICE_JSON=$(gcloud run services describe "$SERVICE" --region "$REGION" --format=json 2>/dev/null || echo '{}')
+          # The revision that currently gets 100% of the traffic (empty on the very first deploy)
+          PREV=$(echo "$SERVICE_JSON" | jq -r '[.status.traffic[]? | select(.percent == 100)][0].revisionName // empty')
+          echo "revision=$PREV" >> "$GITHUB_OUTPUT"
+          echo "Live revision before this deploy: ${PREV:-none (first deploy)}"
+
+      - name: Deploy new revision
+        id: deploy
+        env:
+          PREV: ${{ steps.previous.outputs.revision }}
+        run: |
+          ARGS=(--image "$IMAGE" --region "$REGION" --platform managed
+                --service-account "${{ vars.GCP_RUNTIME_SA }}"
+                --allow-unauthenticated --port 8000
+                --memory 512Mi --cpu 1 --min-instances 0 --max-instances 1
+                --set-secrets "SECRET_KEY=flask-secret-key:latest"
+                --set-env-vars "SEED_DEMO_DATA=1,APP_VERSION=${GITHUB_SHA::7}"
+                --labels "managed-by=github-actions,commit=${GITHUB_SHA::7}")
+          if [ -z "$PREV" ]; then
+            # First deploy: nothing to protect yet, so the new revision goes live directly
+            gcloud run deploy "$SERVICE" "${ARGS[@]}" --quiet
+          else
+            # Later deploys: start the new revision with NO traffic and a "candidate" URL
+            gcloud run deploy "$SERVICE" "${ARGS[@]}" --no-traffic --tag candidate --quiet
+          fi
+          URL=$(gcloud run services describe "$SERVICE" --region "$REGION" --format='value(status.url)')
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "candidate=${URL/https:\/\//https://candidate---}" >> "$GITHUB_OUTPUT"
+
+      - name: Smoke test the new revision
+        env:
+          PREV: ${{ steps.previous.outputs.revision }}
+          URL: ${{ steps.deploy.outputs.url }}
+          CANDIDATE: ${{ steps.deploy.outputs.candidate }}
+        run: |
+          TARGET="$URL"; [ -n "$PREV" ] && TARGET="$CANDIDATE"
+          echo "Testing $TARGET"
+          for i in $(seq 1 20); do
+            if curl -fsS "$TARGET/health" | grep -q '"ok"'; then
+              curl -fsS "$TARGET/instructors" | grep -q "instructor(s) found"
+              echo "New revision is healthy"
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "::error::New revision failed the smoke test, it will not receive traffic"
+          exit 1
+
+      - name: Send all traffic to the new revision
+        id: golive
+        env:
+          PREV: ${{ steps.previous.outputs.revision }}
+          URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          if [ -n "$PREV" ]; then
+            gcloud run services update-traffic "$SERVICE" --region "$REGION" --to-latest --quiet
+          fi
+          sleep 5
+          curl -fsS "$URL/health" | grep -q '"ok"'
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "### Deployed ${GITHUB_SHA::7} to $URL" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Roll back to the previous revision
+        if: failure() && steps.previous.outputs.revision != ''
+        env:
+          PREV: ${{ steps.previous.outputs.revision }}
+        run: |
+          echo "::warning::Deploy failed - sending 100% of traffic back to $PREV"
+          gcloud run services update-traffic "$SERVICE" --region "$REGION" --to-revisions "$PREV=100" --quiet
+          echo "### Deploy failed, rolled back to $PREV" >> "$GITHUB_STEP_SUMMARY"
