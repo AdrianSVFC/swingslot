@@ -27,6 +27,9 @@
               {% if has_endpoint('dashboard.home') %}
                 <li class="nav-item"><a class="nav-link" href="{{ url_for('dashboard.home') }}">Dashboard</a></li>
               {% endif %}
+              {% if g.user.role == 'student' and has_endpoint('golfers.profile') %}
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('golfers.profile') }}">My profile</a></li>
+              {% endif %}
               {% if g.user.role == 'instructor' %}
                 {% if has_endpoint('slots.manage') %}
                   <li class="nav-item"><a class="nav-link" href="{{ url_for('slots.manage') }}">My slots</a></li>

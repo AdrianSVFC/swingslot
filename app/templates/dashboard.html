@@ -25,6 +25,13 @@
                   <span class="text-muted">({{ l.location }}, ${{ l.price }})</span>
                 {% else %}
                   with golfer {{ l.other_name }}
+                  {# GOLF-20: the golfer's profile, so the instructor can plan the lesson #}
+                  {% if l.level %}
+                    <span class="badge badge-type ms-1">{{ l.level }}{% if l.handicap is not none %} · HCP {{ l.handicap }}{% endif %}</span>
+                    {% if l.goals %}<br><small class="text-muted">Goals: {{ l.goals }}</small>{% endif %}
+                  {% else %}
+                    <span class="badge bg-light text-muted border ms-1">No golfer profile yet</span>
+                  {% endif %}
                 {% endif %}
               </span>
               {# GOLF-37: golfers can cancel up to 24 hours before the lesson #}

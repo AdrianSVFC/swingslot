@@ -19,7 +19,7 @@ def home():
     if g.user["role"] == "student":
         lessons = db.execute(
             "SELECT b.id AS booking_id, s.starts_at, u.id AS other_id, u.name AS other_name,"
-            " p.location, p.price"
+            " p.location, p.price, NULL AS handicap, NULL AS level, NULL AS goals"
             " FROM bookings b JOIN time_slots s ON s.id = b.slot_id"
             " JOIN users u ON u.id = s.instructor_id"
             " LEFT JOIN instructor_profiles p ON p.user_id = u.id"
@@ -30,9 +30,11 @@ def home():
     else:
         lessons = db.execute(
             "SELECT b.id AS booking_id, s.starts_at, u.id AS other_id, u.name AS other_name,"
-            " NULL AS location, NULL AS price"
+            " NULL AS location, NULL AS price, sp.handicap, sp.level, sp.goals"
             " FROM bookings b JOIN time_slots s ON s.id = b.slot_id"
             " JOIN users u ON u.id = b.student_id"
+            # GOLF-20: show the golfer's handicap, level and goals to the instructor
+            " LEFT JOIN student_profiles sp ON sp.user_id = b.student_id"
             " WHERE s.instructor_id = ? ORDER BY s.starts_at",
             (g.user["id"],),
         ).fetchall()

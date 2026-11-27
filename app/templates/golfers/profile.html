@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}My golfer profile{% endblock %}
+{% block content %}
+<div class="container py-5" style="max-width: 680px;">
+  <h1 class="h3 mb-1">My golfer profile</h1>
+  <p class="text-muted mb-4">Your instructors see this with every lesson you book, so they can plan it for your level.</p>
+  <form method="post" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="row g-3 mb-3">
+      <div class="col-sm-5">
+        <label for="handicap" class="form-label">Handicap index</label>
+        <input id="handicap" name="handicap" type="number" step="0.1" min="0" max="{{ max_handicap }}"
+          class="form-control" aria-describedby="hcp-help"
+          value="{{ profile.handicap if profile and profile.handicap is not none else '' }}" placeholder="18.4">
+        <div id="hcp-help" class="form-text">0 to {{ max_handicap }}. Leave empty if you don't have one yet.</div>
+      </div>
+      <div class="col-sm-7">
+        <label for="level" class="form-label">Level</label>
+        <select id="level" name="level" class="form-select" required>
+          {% for lvl in levels %}
+            <option value="{{ lvl }}" {% if profile and profile.level == lvl %}selected{% endif %}>{{ lvl }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="mb-4">
+      <label for="goals" class="form-label">Goals</label>
+      <textarea id="goals" name="goals" class="form-control" rows="4" maxlength="{{ max_goals }}"
+        aria-describedby="goals-help"
+        placeholder="e.g. Break 90 this season and stop slicing my driver">{{ profile.goals if profile else '' }}</textarea>
+      <div id="goals-help" class="form-text">What would you like to work on? (max {{ max_goals }} characters)</div>
+    </div>
+    <button type="submit" class="btn btn-fairway">Save profile</button>
+    {% if has_endpoint('bookings.browse') %}
+      <a href="{{ url_for('bookings.browse') }}" class="btn btn-outline-secondary ms-2">Find an instructor</a>
+    {% endif %}
+  </form>
+</div>
+{% endblock %}

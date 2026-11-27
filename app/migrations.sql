@@ -10,3 +10,12 @@ CREATE TABLE IF NOT EXISTS cancellations (
   starts_at TEXT NOT NULL,                -- when the cancelled lesson was going to start
   cancelled_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- GOLF-17 / GOLF-18: golfer profile, shown to instructors with each booking (GOLF-20).
+CREATE TABLE IF NOT EXISTS student_profiles (
+  user_id INTEGER PRIMARY KEY REFERENCES users (id) ON DELETE CASCADE,
+  handicap REAL,                          -- 0 to 54 (World Handicap System); NULL = no handicap yet
+  level TEXT NOT NULL DEFAULT 'Beginner' CHECK (level IN ('Beginner', 'Intermediate', 'Advanced')),
+  goals TEXT NOT NULL DEFAULT '',
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

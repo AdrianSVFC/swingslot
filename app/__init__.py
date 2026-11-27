@@ -25,12 +25,13 @@ def create_app(test_config=None):
     db.ensure_db(app)
 
     # One blueprint per feature / Jira user story
-    from . import auth, bookings, dashboard, instructors, slots
+    from . import auth, bookings, dashboard, golfers, instructors, slots
     app.register_blueprint(auth.bp)         # GOLF-2, GOLF-12: accounts
     app.register_blueprint(instructors.bp)  # GOLF-7: instructor profile
     app.register_blueprint(slots.bp)        # GOLF-22: availability
-    app.register_blueprint(bookings.bp)     # GOLF-27, GOLF-32: browse and book
+    app.register_blueprint(bookings.bp)     # GOLF-27, GOLF-32, GOLF-37: browse, book and cancel
     app.register_blueprint(dashboard.bp)    # GOLF-42: dashboards
+    app.register_blueprint(golfers.bp)      # GOLF-17: golfer profile (handicap, level, goals)
 
     register_csrf(app)
 
@@ -55,7 +56,8 @@ def create_app(test_config=None):
 
     @app.route("/health")
     def health():
-        return {"status": "ok"}
+        # Used by the CI smoke test, Cloud Run deploy checks and the uptime check (GOLF-84)
+        return {"status": "ok", "version": os.environ.get("APP_VERSION", "dev")}
 
     @app.errorhandler(403)
     def forbidden(_error):
